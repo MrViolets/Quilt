@@ -1,0 +1,23 @@
+{
+  "EXT_NAME": {
+    "message": "Quilt - Automatic Tiling Windows"
+  },
+  "EXT_NAME_SHORT": {
+    "message": "Quilt"
+  },
+  "EXT_DESCRIPTION": {
+    "message": "Quilt keeps your workspace tidy by automatically tiling your windows."
+  },
+  "MENU_MAIN_WINDOW": {
+    "message": "Master Window Position"
+  },
+  "MENU_MAIN_WINDOW_RATIO": {
+    "message": "Master Window Ratio"
+  },
+  "MENU_ENABLED": {
+    "message": "Automatic Tiling"
+  },
+  "MENU_PADDING": {
+    "message": "Window Spacing"
+  }
+}

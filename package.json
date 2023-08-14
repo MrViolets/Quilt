@@ -1,7 +1,7 @@
 {
   "name": "quilt",
   "productName": "Quilt",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Sylvester Wilmott",
   "license": "GPL-3.0",
   "devDependencies": {

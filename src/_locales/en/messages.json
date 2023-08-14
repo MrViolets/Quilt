@@ -19,5 +19,23 @@
   },
   "MENU_PADDING": {
     "message": "Window Spacing"
+  },
+  "MENU_TILE_NOW": {
+    "message": "Tile Now"
+  },
+  "MENU_TILE_NOW_CURRENT": {
+    "message": "This Display"
+  },
+  "MENU_TILE_NOW_ALL": {
+    "message": "All Displays"
+  },
+  "MENU_RATE": {
+    "message": "Rate Quilt"
+  },
+  "MENU_DONATE": {
+    "message": "Buy Me a Coffee"
+  },
+  "MENU_PREFERENCES": {
+    "message": "Preferences"
   }
 }

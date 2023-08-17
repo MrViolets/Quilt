@@ -530,10 +530,12 @@ async function tileWindows (allDisplays, targetDisplay) {
 }
 
 async function getWindowsToBeTiled (allDisplays, targetDisplay) {
-  const allWindows = (await windows.getWindows().catch(e => {
-    console.error('Failed to fetch windows:', e)
+  const fetchedWindows = await windows.getWindows().catch(error => {
+    console.error('Failed to fetch windows:', error)
     return []
-  })).filter((win) => win.state !== 'minimized')
+  })
+
+  const allWindows = fetchedWindows.filter(win => win.state !== 'minimized' && win.type === 'normal')
 
   if (allWindows.length === 0) return
 

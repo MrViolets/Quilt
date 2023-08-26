@@ -39,11 +39,7 @@ async function countConnectedDisplays () {
 }
 
 async function setupContextMenu () {
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
-    console.error(error)
-    return storage.preferenceDefaults
-  })
-  const menuItemsFromPreferences = buildMenuStructureFromPreferences(userPreferences)
+  const menuItemsFromPreferences = buildMenuStructureFromPreferences(storage.preferenceDefaults)
   const allDisplays = await display.getDisplayInfo().catch(error => {
     console.error(error)
     return null
@@ -194,10 +190,20 @@ function getSeparatorMenuItem (parentId) {
 }
 
 async function loadPreferences () {
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  let userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
     console.error(error)
     return storage.preferenceDefaults
   })
+
+  // Prune any changed settings
+  userPreferences = Object.fromEntries(
+    Object.entries(userPreferences).filter(
+      ([key]) => key in storage.preferenceDefaults
+    )
+  )
+
+  // Save pruned preferences back to storage
+  await storage.save('preferences', userPreferences)
 
   try {
     for (const [preferenceName, preferenceObj] of Object.entries(userPreferences)) {

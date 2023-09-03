@@ -2,14 +2,10 @@
 
 /* global chrome */
 
-import * as display from './modules/display.js'
-import * as menu from './modules/menu.js'
-import * as storage from './modules/storage.js'
-import * as tabs from './modules/tabs.js'
-import * as windows from './modules/windows.js'
+import * as ch from './chrome/promisify.js'
 
-chrome.runtime.onInstalled.addListener(init)
-chrome.runtime.onStartup.addListener(init)
+chrome.runtime.onInstalled.addListener(onInstalled)
+chrome.runtime.onStartup.addListener(onStartup)
 chrome.contextMenus.onClicked.addListener(onMenuClicked)
 chrome.windows.onCreated.addListener(onWindowCreated, { windowType: ['normal'] })
 chrome.windows.onRemoved.addListener(onWindowRemoved, { windowType: ['normal'] })
@@ -17,30 +13,61 @@ chrome.windows.onBoundsChanged.addListener(onWindowBoundsChanged)
 chrome.system.display.onDisplayChanged.addListener(onDisplaysChanged)
 chrome.commands.onCommand.addListener(onCommandReceived)
 
-async function init () {
+const preferenceDefaults = {
+  auto_tiling: {
+    title: chrome.i18n.getMessage('MENU_ENABLED'),
+    value: true,
+    type: 'checkbox'
+  },
+  master_window: {
+    title: chrome.i18n.getMessage('MENU_MAIN_WINDOW'),
+    value: 'none',
+    type: 'radio',
+    options: ['start', 'end', 'none']
+  },
+  master_ratio: {
+    title: chrome.i18n.getMessage('MENU_MAIN_WINDOW_RATIO'),
+    value: '50%',
+    type: 'radio',
+    options: ['33%', '50%', '66%']
+  },
+  padding: {
+    title: chrome.i18n.getMessage('MENU_PADDING'),
+    value: '10',
+    type: 'radio',
+    options: ['10', '20', '30', 'none']
+  }
+}
+
+async function onInstalled () {
   await countConnectedDisplays()
   await setupContextMenu()
   await loadPreferences()
 }
 
+async function onStartup () {
+  await countConnectedDisplays()
+  await loadPreferences()
+}
+
 async function countConnectedDisplays () {
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
-    return 1
+    return null
   })
 
   const numConnectedDisplays = allDisplays.length
 
   try {
-    await storage.saveSession('number-of-displays', numConnectedDisplays)
+    await ch.storageSessionSet({ 'number-of-displays': numConnectedDisplays })
   } catch (error) {
     console.error(error)
   }
 }
 
 async function setupContextMenu () {
-  const menuItemsFromPreferences = buildMenuStructureFromPreferences(storage.preferenceDefaults)
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const menuItemsFromPreferences = buildMenuStructureFromPreferences(preferenceDefaults)
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -105,10 +132,12 @@ async function setupContextMenu () {
     }
   ]
 
-  try {
-    await menu.create(menuItemsWithSeparators)
-  } catch (error) {
-    console.error(error)
+  for (const item of menuItemsWithSeparators) {
+    try {
+      await ch.menusCreate(item)
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
 
@@ -190,27 +219,29 @@ function getSeparatorMenuItem (parentId) {
 }
 
 async function loadPreferences () {
-  let userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
+
+  let userPreferences = prefResult.preferences
 
   // Prune any changed settings
   userPreferences = Object.fromEntries(
     Object.entries(userPreferences).filter(
-      ([key]) => key in storage.preferenceDefaults
+      ([key]) => key in preferenceDefaults
     )
   )
 
-  // Save pruned preferences back to storage
-  await storage.save('preferences', userPreferences)
-
   try {
+    // Save pruned preferences back to storage
+    await ch.storageSyncSet({ preferences: userPreferences })
+
     for (const [preferenceName, preferenceObj] of Object.entries(userPreferences)) {
       if (preferenceObj.type === 'radio') {
-        await menu.update(`${preferenceName}.${preferenceObj.value}`, true)
+        await ch.menusUpdate(`${preferenceName}.${preferenceObj.value}`, { checked: true })
       } else if (preferenceObj.type === 'checkbox') {
-        await menu.update(preferenceName, preferenceObj.value)
+        await ch.menusUpdate(preferenceName, { checked: preferenceObj.value })
       }
     }
   } catch (error) {
@@ -222,16 +253,18 @@ async function onDisplaysChanged () {
   await setupContextMenu()
   await loadPreferences()
 
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
+
+  const userPreferences = prefResult.preferences
 
   if (userPreferences.auto_tiling.value === false) {
     return
   }
 
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -239,17 +272,19 @@ async function onDisplaysChanged () {
   if (!allDisplays) return
 
   const newNumConnectedDisplays = allDisplays.length
-  const oldNumConnectedDisplays = await storage.loadSession('number-of-displays', 1).catch(error => {
+  const numDisplaysResult = await ch.storageSessionGet({ 'number-of-displays': 1 }).catch(error => {
     console.error(error)
-    return 1
+    return { 'number-of-displays': 1 }
   })
+
+  const oldNumConnectedDisplays = numDisplaysResult['number-of-displays']
 
   // If the number if displays has changed then update the tiling
   if (oldNumConnectedDisplays !== newNumConnectedDisplays) {
     await tileAllDisplays()
 
     try {
-      await storage.saveSession('number-of-displays', newNumConnectedDisplays)
+      await ch.storageSessionSet({ 'number-of-displays': newNumConnectedDisplays })
     } catch (error) {
       console.error(error)
     }
@@ -259,11 +294,14 @@ async function onDisplaysChanged () {
 async function onMenuClicked (info, tab) {
   const { menuItemId, parentMenuItemId, checked } = info
 
-  if (storage.preferenceDefaults[menuItemId] || storage.preferenceDefaults[parentMenuItemId ?? '']) {
-    const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  if (preferenceDefaults[menuItemId] || preferenceDefaults[parentMenuItemId ?? '']) {
+    const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
       console.error(error)
-      return storage.preferenceDefaults
+      return { preferences: preferenceDefaults }
     })
+
+    const userPreferences = prefResult.preferences
+
     const preference = userPreferences[menuItemId]
     const parentPreference = userPreferences[parentMenuItemId ?? '']
 
@@ -274,7 +312,7 @@ async function onMenuClicked (info, tab) {
     }
 
     try {
-      await storage.save('preferences', userPreferences)
+      await ch.storageSyncSet({ preferences: userPreferences })
     } catch (error) {
       console.error(error)
     }
@@ -284,20 +322,24 @@ async function onMenuClicked (info, tab) {
     }
   }
 
-  if (menuItemId === 'tile_now_current') {
-    const win = await windows.get(tab.windowId)
-    await tileDisplayByWin(win)
-  } else if ((menuItemId === 'auto_tiling' && checked) || menuItemId === 'tile_now' || menuItemId === 'tile_now_all' || parentMenuItemId === 'master_ratio') {
-    await tileAllDisplays()
-  } else if (menuItemId === 'auto_tiling' && !checked) {
-    await storage.clearSession('tiled-windows')
-  } else if (menuItemId === 'rate_extension' || menuItemId === 'donate') {
-    await openExternal(menuItemId)
+  try {
+    if (menuItemId === 'tile_now_current') {
+      const win = await ch.windowsGet(tab.windowId)
+      await tileDisplayByWin(win)
+    } else if ((menuItemId === 'auto_tiling' && checked) || menuItemId === 'tile_now' || menuItemId === 'tile_now_all' || parentMenuItemId === 'master_ratio') {
+      await tileAllDisplays()
+    } else if (menuItemId === 'auto_tiling' && !checked) {
+      await ch.storageSessionRemove('tiled-windows')
+    } else if (menuItemId === 'rate_extension' || menuItemId === 'donate') {
+      await openExternal(menuItemId)
+    }
+  } catch (error) {
+    console.error(error)
   }
 }
 
 async function tileAllDisplays () {
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -314,7 +356,7 @@ async function tileAllDisplays () {
 }
 
 async function tileDisplayByWin (win) {
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -326,7 +368,7 @@ async function tileDisplayByWin (win) {
 }
 
 async function retileTiledDisplays () {
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -338,10 +380,12 @@ async function retileTiledDisplays () {
     return
   }
 
-  const tiledWindows = await storage.loadSession('tiled-windows', []).catch(error => {
+  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
     console.error(error)
-    return []
+    return { 'tiled-windows': [] }
   })
+
+  const tiledWindows = winResult['tiled-windows']
 
   if (tiledWindows.length === 0) return
 
@@ -358,16 +402,18 @@ async function onWindowCreated (win) {
     return
   }
 
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
+
+  const userPreferences = prefResult.preferences
 
   if (userPreferences.auto_tiling.value === false) {
     return
   }
 
-  const allDisplays = await display.getDisplayInfo().catch(error => {
+  const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
     return null
   })
@@ -379,19 +425,23 @@ async function onWindowCreated (win) {
 }
 
 async function onWindowRemoved (winId) {
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
+
+  const userPreferences = prefResult.preferences
 
   if (userPreferences.auto_tiling.value === false) {
     return
   }
 
-  const tiledWindows = await storage.loadSession('tiled-windows', []).catch(error => {
+  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
     console.error(error)
-    return []
+    return { 'tiled-windows': [] }
   })
+
+  const tiledWindows = winResult['tiled-windows']
 
   if (tiledWindows.length === 0) return
 
@@ -405,7 +455,7 @@ async function onWindowRemoved (winId) {
   const tiledWindowsOnDisplay = tiledWindows.filter((w) => w.displayId === targetWindow.displayId)
 
   if (tiledWindowsOnDisplay.length > 0) {
-    const allDisplays = await display.getDisplayInfo().catch(error => {
+    const allDisplays = await ch.displayGetInfo().catch(error => {
       console.error(error)
       return null
     })
@@ -423,31 +473,36 @@ async function onWindowRemoved (winId) {
   tiledWindows.splice(indexOfRemovedWindow, 1)
   // Save the updated tiledWindows array to storage
   try {
-    await storage.saveSession('tiled-windows', tiledWindows)
+    await ch.storageSyncSet({ 'tiled-windows': tiledWindows })
   } catch (error) {
     console.error(error)
   }
 }
 
 async function onWindowBoundsChanged (win) {
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
+
+  const userPreferences = prefResult.preferences
 
   if (userPreferences.auto_tiling.value === false) {
     return
   }
 
-  const tiledWindows = await storage.loadSession('tiled-windows', []).catch(error => {
+  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
     console.error(error)
-    return []
+    return { 'tiled-windows': [] }
   })
+
+  const tiledWindows = winResult['tiled-windows']
+
   const targetWindow = tiledWindows.find((w) => w.winId === win.id)
 
   if (targetWindow && targetWindow.ignoreUpdate === false) {
     // Update the displayId and save to storage
-    const allDisplays = await display.getDisplayInfo().catch(error => {
+    const allDisplays = await ch.displayGetInfo().catch(error => {
       console.error(error)
       return null
     })
@@ -458,7 +513,7 @@ async function onWindowBoundsChanged (win) {
 
     if (displayContainingTargetWindow.id !== targetWindow.displayId) {
       targetWindow.displayId = displayContainingTargetWindow.id
-      await storage.saveSession('tiled-windows', tiledWindows)
+      await ch.storageSessionSet({ 'tiled-windows': tiledWindows })
     }
   }
 }
@@ -470,14 +525,20 @@ async function onCommandReceived (command) {
 }
 
 async function tileWindows (allDisplays, targetDisplay) {
-  const userPreferences = await storage.load('preferences', storage.preferenceDefaults).catch(error => {
+  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
-    return storage.preferenceDefaults
+    return { preferences: preferenceDefaults }
   })
-  const tiledWindows = await storage.loadSession('tiled-windows', []).catch(error => {
+
+  const userPreferences = prefResult.preferences
+
+  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
     console.error(error)
-    return []
+    return { 'tiled-windows': [] }
   })
+
+  const tiledWindows = winResult['tiled-windows']
+
   const windowsToBeTiled = await getWindowsToBeTiled(allDisplays, targetDisplay).catch(error => {
     console.error(error)
     return []
@@ -502,7 +563,13 @@ async function tileWindows (allDisplays, targetDisplay) {
 
     // Set the position of the master window
     try {
-      await windows.setWindow(masterWin.id, masterWindowTile)
+      await ch.windowsUpdate(masterWin.id, {
+        height: masterWindowTile.height,
+        width: masterWindowTile.width,
+        top: masterWindowTile.top,
+        left: masterWindowTile.left,
+        state: 'normal'
+      })
     } catch (error) {
       console.error(error)
     }
@@ -536,7 +603,7 @@ async function tileWindows (allDisplays, targetDisplay) {
 }
 
 async function getWindowsToBeTiled (allDisplays, targetDisplay) {
-  const fetchedWindows = await windows.getWindows().catch(error => {
+  const fetchedWindows = await ch.windowsGetAll().catch(error => {
     console.error('Failed to fetch windows:', error)
     return []
   })
@@ -696,7 +763,7 @@ async function processTiledWindows (displayObj, tileObj, padding) {
     // Only set window sizes and positions of windows in the wrong size/place
     if (!compareWindowExpectedSize(expectedPosition, currentPosition)) {
       try {
-        await windows.setWindow(win.id, expectedPosition)
+        await ch.windowsUpdate(win.id, { ...expectedPosition, state: 'normal' })
       } catch (error) {
         console.error(error)
       }
@@ -708,7 +775,7 @@ async function processTiledWindows (displayObj, tileObj, padding) {
   }
 
   try {
-    await storage.saveSession('tiled-windows', tileObj.tiledWindows)
+    await ch.storageSessionSet({ 'tiled-windows': tileObj.tiledWindows })
   } catch (error) {
     console.error(error)
   }
@@ -781,7 +848,7 @@ async function openExternal (type) {
   }
 
   try {
-    await tabs.create(url)
+    await ch.tabsCreate({ url })
   } catch (error) {
     console.error(error)
   }

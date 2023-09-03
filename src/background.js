@@ -132,6 +132,12 @@ async function setupContextMenu () {
     }
   ]
 
+  try {
+    await ch.menusRemoveAll()
+  } catch (error) {
+    console.error(error)
+  }
+
   for (const item of menuItemsWithSeparators) {
     try {
       await ch.menusCreate(item)
@@ -219,7 +225,7 @@ function getSeparatorMenuItem (parentId) {
 }
 
 async function loadPreferences () {
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })
@@ -235,7 +241,7 @@ async function loadPreferences () {
 
   try {
     // Save pruned preferences back to storage
-    await ch.storageSyncSet({ preferences: userPreferences })
+    await ch.storageLocalSet({ preferences: userPreferences })
 
     for (const [preferenceName, preferenceObj] of Object.entries(userPreferences)) {
       if (preferenceObj.type === 'radio') {
@@ -253,7 +259,7 @@ async function onDisplaysChanged () {
   await setupContextMenu()
   await loadPreferences()
 
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })
@@ -295,7 +301,7 @@ async function onMenuClicked (info, tab) {
   const { menuItemId, parentMenuItemId, checked } = info
 
   if (preferenceDefaults[menuItemId] || preferenceDefaults[parentMenuItemId ?? '']) {
-    const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+    const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
       console.error(error)
       return { preferences: preferenceDefaults }
     })
@@ -312,7 +318,7 @@ async function onMenuClicked (info, tab) {
     }
 
     try {
-      await ch.storageSyncSet({ preferences: userPreferences })
+      await ch.storageLocalSet({ preferences: userPreferences })
     } catch (error) {
       console.error(error)
     }
@@ -402,7 +408,7 @@ async function onWindowCreated (win) {
     return
   }
 
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })
@@ -425,7 +431,7 @@ async function onWindowCreated (win) {
 }
 
 async function onWindowRemoved (winId) {
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })
@@ -473,14 +479,14 @@ async function onWindowRemoved (winId) {
   tiledWindows.splice(indexOfRemovedWindow, 1)
   // Save the updated tiledWindows array to storage
   try {
-    await ch.storageSyncSet({ 'tiled-windows': tiledWindows })
+    await ch.storageLocalSet({ 'tiled-windows': tiledWindows })
   } catch (error) {
     console.error(error)
   }
 }
 
 async function onWindowBoundsChanged (win) {
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })
@@ -525,7 +531,7 @@ async function onCommandReceived (command) {
 }
 
 async function tileWindows (allDisplays, targetDisplay) {
-  const prefResult = await ch.storageSyncGet({ preferences: preferenceDefaults }).catch(error => {
+  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
     console.error(error)
     return { preferences: preferenceDefaults }
   })

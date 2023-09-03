@@ -59,7 +59,7 @@ async function countConnectedDisplays () {
   const numConnectedDisplays = allDisplays.length
 
   try {
-    await ch.storageSessionSet({ 'number-of-displays': numConnectedDisplays })
+    await ch.storageSessionSet({ number_of_displays: numConnectedDisplays })
   } catch (error) {
     console.error(error)
   }
@@ -278,19 +278,19 @@ async function onDisplaysChanged () {
   if (!allDisplays) return
 
   const newNumConnectedDisplays = allDisplays.length
-  const numDisplaysResult = await ch.storageSessionGet({ 'number-of-displays': 1 }).catch(error => {
+  const numDisplaysResult = await ch.storageSessionGet({ number_of_displays: 1 }).catch(error => {
     console.error(error)
-    return { 'number-of-displays': 1 }
+    return { number_of_displays: 1 }
   })
 
-  const oldNumConnectedDisplays = numDisplaysResult['number-of-displays']
+  const oldNumConnectedDisplays = numDisplaysResult.number_of_displays
 
   // If the number if displays has changed then update the tiling
   if (oldNumConnectedDisplays !== newNumConnectedDisplays) {
     await tileAllDisplays()
 
     try {
-      await ch.storageSessionSet({ 'number-of-displays': newNumConnectedDisplays })
+      await ch.storageSessionSet({ number_of_displays: newNumConnectedDisplays })
     } catch (error) {
       console.error(error)
     }
@@ -335,7 +335,7 @@ async function onMenuClicked (info, tab) {
     } else if ((menuItemId === 'auto_tiling' && checked) || menuItemId === 'tile_now' || menuItemId === 'tile_now_all' || parentMenuItemId === 'master_ratio') {
       await tileAllDisplays()
     } else if (menuItemId === 'auto_tiling' && !checked) {
-      await ch.storageSessionRemove('tiled-windows')
+      await ch.storageSessionRemove('tiled_windows')
     } else if (menuItemId === 'rate_extension' || menuItemId === 'donate') {
       await openExternal(menuItemId)
     }
@@ -386,12 +386,12 @@ async function retileTiledDisplays () {
     return
   }
 
-  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
+  const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
-    return { 'tiled-windows': [] }
+    return { tiled_windows: [] }
   })
 
-  const tiledWindows = winResult['tiled-windows']
+  const tiledWindows = winResult.tiled_windows
 
   if (tiledWindows.length === 0) return
 
@@ -442,12 +442,12 @@ async function onWindowRemoved (winId) {
     return
   }
 
-  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
+  const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
-    return { 'tiled-windows': [] }
+    return { tiled_windows: [] }
   })
 
-  const tiledWindows = winResult['tiled-windows']
+  const tiledWindows = winResult.tiled_windows
 
   if (tiledWindows.length === 0) return
 
@@ -479,7 +479,7 @@ async function onWindowRemoved (winId) {
   tiledWindows.splice(indexOfRemovedWindow, 1)
   // Save the updated tiledWindows array to storage
   try {
-    await ch.storageLocalSet({ 'tiled-windows': tiledWindows })
+    await ch.storageLocalSet({ tiled_windows: tiledWindows })
   } catch (error) {
     console.error(error)
   }
@@ -497,12 +497,12 @@ async function onWindowBoundsChanged (win) {
     return
   }
 
-  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
+  const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
-    return { 'tiled-windows': [] }
+    return { tiled_windows: [] }
   })
 
-  const tiledWindows = winResult['tiled-windows']
+  const tiledWindows = winResult.tiled_windows
 
   const targetWindow = tiledWindows.find((w) => w.winId === win.id)
 
@@ -519,7 +519,7 @@ async function onWindowBoundsChanged (win) {
 
     if (displayContainingTargetWindow.id !== targetWindow.displayId) {
       targetWindow.displayId = displayContainingTargetWindow.id
-      await ch.storageSessionSet({ 'tiled-windows': tiledWindows })
+      await ch.storageSessionSet({ tiled_windows: tiledWindows })
     }
   }
 }
@@ -538,12 +538,12 @@ async function tileWindows (allDisplays, targetDisplay) {
 
   const userPreferences = prefResult.preferences
 
-  const winResult = await ch.storageSessionGet({ 'tiled-windows': [] }).catch(error => {
+  const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
-    return { 'tiled-windows': [] }
+    return { tiled_windows: [] }
   })
 
-  const tiledWindows = winResult['tiled-windows']
+  const tiledWindows = winResult.tiled_windows
 
   const windowsToBeTiled = await getWindowsToBeTiled(allDisplays, targetDisplay).catch(error => {
     console.error(error)
@@ -781,7 +781,7 @@ async function processTiledWindows (displayObj, tileObj, padding) {
   }
 
   try {
-    await ch.storageSessionSet({ 'tiled-windows': tileObj.tiledWindows })
+    await ch.storageSessionSet({ tiled_windows: tileObj.tiledWindows })
   } catch (error) {
     console.error(error)
   }

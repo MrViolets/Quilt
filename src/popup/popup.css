@@ -135,7 +135,7 @@ body {
   transition: 0.4s;
   border-radius: 16px;
   background-color: transparent;
-  box-shadow: inset 0px 0px 0px 1px var(--accent);
+  box-shadow: inset 0px 0px 0px 1px var(--secondary);
 }
 
 .track:before {
@@ -185,7 +185,7 @@ select {
   outline: none;
   color: var(--secondary);
   text-align: right;
-  padding-right: 24px;
+  padding-right: 20px;
   min-width: 80px;
 }
 

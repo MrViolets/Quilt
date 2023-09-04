@@ -1,80 +1,80 @@
-"use strict";
+'use strict'
 
 /* global chrome */
 
-import * as ch from "../chrome/promisify.js";
-import * as preferences from "../preferences.js";
+import * as ch from '../chrome/promisify.js'
+import * as preferences from '../preferences.js'
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener('DOMContentLoaded', init)
 
-async function init() {
-  insertStrings();
-  await restorePreferences();
-  prepareAnimatedElements();
-  registerListeners();
+async function init () {
+  insertStrings()
+  await restorePreferences()
+  prepareAnimatedElements()
+  registerListeners()
 }
 
-async function prepareAnimatedElements() {
-  const animatedElements = document.querySelectorAll(".no-transition");
+async function prepareAnimatedElements () {
+  const animatedElements = document.querySelectorAll('.no-transition')
 
   for (const el of animatedElements) {
-    const pseudoBefore = window.getComputedStyle(el, ":before").content;
-    const pseudoAfter = window.getComputedStyle(el, ":after").content;
-    const hasBeforeContent = pseudoBefore !== "none" && pseudoBefore !== "";
-    const hasAfterContent = pseudoAfter !== "none" && pseudoAfter !== "";
+    const pseudoBefore = window.getComputedStyle(el, ':before').content
+    const pseudoAfter = window.getComputedStyle(el, ':after').content
+    const hasBeforeContent = pseudoBefore !== 'none' && pseudoBefore !== ''
+    const hasAfterContent = pseudoAfter !== 'none' && pseudoAfter !== ''
 
     if (hasBeforeContent || hasAfterContent) {
       el.addEventListener(
-        "transitionend",
+        'transitionend',
         function () {
-          el.classList.remove("no-transition");
+          el.classList.remove('no-transition')
         },
         { once: true }
-      );
+      )
     }
 
-    el.classList.remove("no-transition");
+    el.classList.remove('no-transition')
   }
 }
 
-async function insertStrings() {
-  const strings = document.querySelectorAll("[data-localize]");
+async function insertStrings () {
+  const strings = document.querySelectorAll('[data-localize]')
 
   if (strings) {
     for (const s of strings) {
-      s.innerText = chrome.i18n.getMessage(s.dataset.localize);
+      s.innerText = chrome.i18n.getMessage(s.dataset.localize)
     }
   }
 
-  const selectInputs = document.querySelectorAll("select");
+  const selectInputs = document.querySelectorAll('select')
 
   for (const s of selectInputs) {
-    const options = getOptionsForKey(s.id, preferences.defaults);
+    const options = getOptionsForKey(s.id, preferences.defaults)
 
     if (!options) {
-      continue;
+      continue
     }
 
-    s.innerHTML = "";
+    s.innerHTML = ''
 
     for (const optionValue of options) {
-      const capitalizedOption = optionValue.charAt(0).toUpperCase() + optionValue.slice(1);
-      const optionElement = document.createElement("option");
-      optionElement.value = optionValue;
-      optionElement.innerText = capitalizedOption;
-      s.appendChild(optionElement);
+      const capitalizedOption = optionValue.charAt(0).toUpperCase() + optionValue.slice(1)
+      const optionElement = document.createElement('option')
+      optionElement.value = optionValue
+      optionElement.innerText = capitalizedOption
+      s.appendChild(optionElement)
     }
   }
 }
 
-function getOptionsForKey(key, defaultsObject) {
+function getOptionsForKey (key, defaultsObject) {
   if (defaultsObject[key] && defaultsObject[key].options) {
-    return defaultsObject[key].options;
+    return defaultsObject[key].options
   }
-  return null;
+  return null
 }
 
-async function restorePreferences() {
+async function restorePreferences () {
   const userPreferences = await preferences.get()
 
   for (const [preferenceName, preferenceObj] of Object.entries(userPreferences)) {
@@ -88,21 +88,21 @@ async function restorePreferences() {
   }
 }
 
-function registerListeners() {
+function registerListeners () {
   const onAll = (target, event, handler) => {
-    const elements = document.querySelectorAll(target);
+    const elements = document.querySelectorAll(target)
 
     for (const el of elements) {
-      el.addEventListener(event, handler, false);
+      el.addEventListener(event, handler, false)
     }
-  };
+  }
 
   onAll('input[type="checkbox"]', 'change', onCheckBoxChanged)
   onAll('select', 'change', onSelectChanged)
   onAll('div.nav-index', 'click', onActionClicked)
 }
 
-async function onCheckBoxChanged(e) {
+async function onCheckBoxChanged (e) {
   const userPreferences = await preferences.get()
   const preference = userPreferences[e.target.id]
 
@@ -113,7 +113,7 @@ async function onCheckBoxChanged(e) {
   try {
     await ch.storageLocalSet({ preferences: userPreferences })
   } catch (error) {
-    console.error('An error occurred:', error)
+    console.error(error)
     e.target.checked = !e.target.checked
     return
   }
@@ -121,13 +121,12 @@ async function onCheckBoxChanged(e) {
   try {
     await ch.sendMessage({ msg: 'preference_updated', id: e.target.id, value: preference.value })
   } catch (error) {
-    console.error('An error occurred:', error)
+    console.error(error)
     e.target.checked = !e.target.checked
-    return
   }
 }
 
-async function onSelectChanged(e) {
+async function onSelectChanged (e) {
   const userPreferences = await preferences.get()
   const preference = userPreferences[e.target.id]
 
@@ -138,23 +137,31 @@ async function onSelectChanged(e) {
   try {
     await ch.storageLocalSet({ preferences: userPreferences })
   } catch (error) {
-    console.error('An error occurred:', error)
+    console.error(error)
     e.target.checked = !e.target.checked
   }
 
   try {
     await ch.sendMessage({ msg: 'preference_updated', id: e.target.id, value: preference.value })
   } catch (error) {
-    console.error('An error occurred:', error)
+    console.error(error)
     e.target.checked = !e.target.checked
-    return
   }
 }
 
-function onActionClicked(e) {
+async function onActionClicked (e) {
   if (e.target.id === 'rate' || e.target.id === 'donate') {
     openExternal(e.target.id)
+  } else if (e.target.id === 'tile_now') {
+    try {
+      await ch.sendMessage({ msg: 'tile_now' })
+    } catch (error) {
+      console.error(error)
+      e.target.checked = !e.target.checked
+    }
   }
+
+  window.close()
 }
 
 async function openExternal (type) {

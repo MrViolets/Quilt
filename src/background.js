@@ -38,8 +38,6 @@ async function countConnectedDisplays () {
 }
 
 async function onDisplaysChanged () {
-  const userPreferences = await preferences.get()
-
   if (!await extensionIsEnabled()) return
 
   const allDisplays = await ch.displayGetInfo().catch(error => {
@@ -121,8 +119,6 @@ async function onWindowCreated (win) {
     return
   }
 
-  const userPreferences = await preferences.get()
-
   if (!await extensionIsEnabled()) return
 
   const allDisplays = await ch.displayGetInfo().catch(error => {
@@ -137,8 +133,6 @@ async function onWindowCreated (win) {
 }
 
 async function onWindowRemoved (winId) {
-  const userPreferences = await preferences.get()
-
   if (!await extensionIsEnabled()) return
 
   const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
@@ -185,8 +179,6 @@ async function onWindowRemoved (winId) {
 }
 
 async function onWindowBoundsChanged (win) {
-  const userPreferences = await preferences.get()
-
   if (!await extensionIsEnabled()) return
 
   const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
@@ -474,21 +466,21 @@ async function processTiledWindows (displayObj, tileObj, padding) {
   }
 }
 
-function compareWindowExpectedSize(pos1, pos2) {
-  const keys1 = Object.keys(pos1);
-  const keys2 = Object.keys(pos2);
+function compareWindowExpectedSize (pos1, pos2) {
+  const keys1 = Object.keys(pos1)
+  const keys2 = Object.keys(pos2)
 
   if (keys1.length !== keys2.length) {
-    return false;
+    return false
   }
 
   for (const key of keys1) {
     if (pos1[key] !== pos2[key]) {
-      return false;
+      return false
     }
   }
 
-  return true;
+  return true
 }
 
 function calculateWindowTiles (displayObj, numWindows, padding) {
@@ -535,26 +527,34 @@ function calculateWindowTiles (displayObj, numWindows, padding) {
   return tilePositions
 }
 
-async function onMessageReceived(message, sender, sendResponse) {
-  if (message.msg === 'preference_updated') {
-    sendResponse()
-
-    if (!await extensionIsEnabled()) return
-    
-    if (message.id === 'master_window' || message.id === 'padding') {
-      await retileTiledDisplays()
-    } else if ((message.id === 'auto_tiling' && message.value === true) || (message.id === 'master_ratio')) {
+async function onMessageReceived (message, sender, sendResponse) {
+  try {
+    if (message.msg === 'preference_updated') {
+      sendResponse()
+  
+      if (!await extensionIsEnabled()) return
+  
+      if (message.id === 'master_window' || message.id === 'padding') {
+        await retileTiledDisplays()
+      } else if ((message.id === 'auto_tiling' && message.value === true) || (message.id === 'master_ratio')) {
+        await tileAllDisplays()
+      } else if (message.id === 'auto_tiling' && message.value === false) {
+        await ch.storageSessionRemove('tiled_windows')
+      }
+    } else if (message.msg === 'tile_now') {
+      sendResponse()
+      
       await tileAllDisplays()
-    } else if (message.id === 'auto_tiling' && message.value === false) {
-      await ch.storageSessionRemove('tiled_windows')
     }
+  } catch (error) {
+    console.error(error)
   }
 }
 
-async function extensionIsEnabled() {
+async function extensionIsEnabled () {
   try {
     const userPreferences = await preferences.get()
-    return userPreferences.auto_tiling.value;
+    return userPreferences.auto_tiling.value
   } catch (error) {
     console.error(error)
     return true

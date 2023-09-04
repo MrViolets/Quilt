@@ -14,8 +14,11 @@
   "MENU_MAIN_WINDOW_RATIO": {
     "message": "Master Window Ratio"
   },
+  "MENU_TILE_NOW": {
+    "message": "Tile Windows Now"
+  },
   "MENU_ENABLED": {
-    "message": "Enable Quilt"
+    "message": "Automatically Tile Windows"
   },
   "MENU_PADDING": {
     "message": "Window Spacing"

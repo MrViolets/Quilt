@@ -3,51 +3,23 @@
 /* global chrome */
 
 import * as ch from './chrome/promisify.js'
+import * as preferences from './preferences.js'
 
 chrome.runtime.onInstalled.addListener(onInstalled)
 chrome.runtime.onStartup.addListener(onStartup)
-chrome.contextMenus.onClicked.addListener(onMenuClicked)
 chrome.windows.onCreated.addListener(onWindowCreated, { windowType: ['normal'] })
 chrome.windows.onRemoved.addListener(onWindowRemoved, { windowType: ['normal'] })
 chrome.windows.onBoundsChanged.addListener(onWindowBoundsChanged)
 chrome.system.display.onDisplayChanged.addListener(onDisplaysChanged)
+chrome.runtime.onMessage.addListener(onMessageReceived)
 chrome.commands.onCommand.addListener(onCommandReceived)
-
-const preferenceDefaults = {
-  auto_tiling: {
-    title: chrome.i18n.getMessage('MENU_ENABLED'),
-    value: true,
-    type: 'checkbox'
-  },
-  master_window: {
-    title: chrome.i18n.getMessage('MENU_MAIN_WINDOW'),
-    value: 'none',
-    type: 'radio',
-    options: ['start', 'end', 'none']
-  },
-  master_ratio: {
-    title: chrome.i18n.getMessage('MENU_MAIN_WINDOW_RATIO'),
-    value: '50%',
-    type: 'radio',
-    options: ['33%', '50%', '66%']
-  },
-  padding: {
-    title: chrome.i18n.getMessage('MENU_PADDING'),
-    value: '10',
-    type: 'radio',
-    options: ['10', '20', '30', 'none']
-  }
-}
 
 async function onInstalled () {
   await countConnectedDisplays()
-  await setupContextMenu()
-  await loadPreferences()
 }
 
 async function onStartup () {
   await countConnectedDisplays()
-  await loadPreferences()
 }
 
 async function countConnectedDisplays () {
@@ -65,210 +37,8 @@ async function countConnectedDisplays () {
   }
 }
 
-async function setupContextMenu () {
-  const menuItemsFromPreferences = buildMenuStructureFromPreferences(preferenceDefaults)
-  const allDisplays = await ch.displayGetInfo().catch(error => {
-    console.error(error)
-    return null
-  })
-
-  if (!allDisplays) return
-
-  const hasMultipleDisplays = allDisplays.length > 1
-
-  const menuItems = [
-    {
-      title: chrome.i18n.getMessage('MENU_TILE_NOW'),
-      contexts: ['action', 'page'],
-      id: 'tile_now',
-      type: 'normal'
-    }
-  ]
-
-  if (hasMultipleDisplays) {
-    // Add the children menu items only if there are multiple displays
-    menuItems.push(
-      {
-        title: chrome.i18n.getMessage('MENU_TILE_NOW_CURRENT'),
-        contexts: ['action', 'page'],
-        id: 'tile_now_current',
-        type: 'normal',
-        parentId: 'tile_now'
-      },
-      {
-        title: chrome.i18n.getMessage('MENU_TILE_NOW_ALL'),
-        contexts: ['action', 'page'],
-        id: 'tile_now_all',
-        type: 'normal',
-        parentId: 'tile_now'
-      }
-    )
-  }
-
-  const menuItemsWithSeparators = [
-    ...menuItems,
-    {
-      contexts: ['action', 'page'],
-      id: 'separator_1',
-      type: 'separator'
-    },
-    ...menuItemsFromPreferences,
-    {
-      contexts: ['action', 'page'],
-      id: 'separator_2',
-      type: 'separator'
-    },
-    {
-      title: chrome.i18n.getMessage('MENU_RATE'),
-      contexts: ['action', 'page'],
-      id: 'rate_extension',
-      type: 'normal'
-    },
-    {
-      title: chrome.i18n.getMessage('MENU_DONATE'),
-      contexts: ['action', 'page'],
-      id: 'donate',
-      type: 'normal'
-    }
-  ]
-
-  try {
-    await ch.menusRemoveAll()
-  } catch (error) {
-    console.error(error)
-  }
-
-  for (const item of menuItemsWithSeparators) {
-    try {
-      await ch.menusCreate(item)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-}
-
-function buildMenuStructureFromPreferences (preferences) {
-  const menuStructure = [
-    {
-      title: chrome.i18n.getMessage('MENU_PREFERENCES'),
-      contexts: ['action', 'page'],
-      id: 'preferences',
-      type: 'normal'
-    }
-  ]
-
-  let i = 0
-
-  for (const key in preferences) {
-    const menuItem = getMenuItem(preferences[key], key)
-    menuStructure.push(...menuItem)
-
-    if (i === 0) {
-      const separator = getSeparatorMenuItem('preferences')
-      menuStructure.push(separator)
-    }
-    i++
-  }
-
-  return menuStructure
-}
-
-function getMenuItem (preference, key) {
-  const temp = []
-
-  if (preference.type === 'checkbox') {
-    const menuItem = {
-      title: preference.title,
-      contexts: ['action', 'page'],
-      id: key,
-      type: 'checkbox',
-      parentId: 'preferences'
-    }
-
-    temp.push(menuItem)
-  }
-
-  if (preference.type === 'radio') {
-    const parentItem = {
-      title: preference.title,
-      contexts: ['action', 'page'],
-      id: key,
-      type: 'normal',
-      parentId: 'preferences'
-    }
-
-    temp.push(parentItem)
-
-    for (const option of preference.options) {
-      const childItem = {
-        title: option.charAt(0).toUpperCase() + option.slice(1),
-        contexts: ['action', 'page'],
-        id: `${key}.${option}`,
-        type: 'radio',
-        parentId: key
-      }
-
-      temp.push(childItem)
-    }
-  }
-
-  return temp
-}
-
-function getSeparatorMenuItem (parentId) {
-  return {
-    contexts: ['action', 'page'],
-    id: `separator_${parentId}`,
-    type: 'separator',
-    parentId
-  }
-}
-
-async function loadPreferences () {
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  let userPreferences = prefResult.preferences
-
-  // Prune any changed settings
-  userPreferences = Object.fromEntries(
-    Object.entries(userPreferences).filter(
-      ([key]) => key in preferenceDefaults
-    )
-  )
-
-  try {
-    // Save pruned preferences back to storage
-    await ch.storageLocalSet({ preferences: userPreferences })
-
-    for (const [preferenceName, preferenceObj] of Object.entries(userPreferences)) {
-      if (preferenceObj.type === 'radio') {
-        await ch.menusUpdate(`${preferenceName}.${preferenceObj.value}`, { checked: true })
-      } else if (preferenceObj.type === 'checkbox') {
-        await ch.menusUpdate(preferenceName, { checked: preferenceObj.value })
-      }
-    }
-  } catch (error) {
-    console.error(error)
-  }
-}
-
 async function onDisplaysChanged () {
-  await setupContextMenu()
-  await loadPreferences()
-
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  const userPreferences = prefResult.preferences
-
-  if (userPreferences.auto_tiling.value === false) {
-    return
-  }
+  if (!await extensionIsEnabled()) return
 
   const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
@@ -297,53 +67,6 @@ async function onDisplaysChanged () {
   }
 }
 
-async function onMenuClicked (info, tab) {
-  const { menuItemId, parentMenuItemId, checked } = info
-
-  if (preferenceDefaults[menuItemId] || preferenceDefaults[parentMenuItemId ?? '']) {
-    const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-      console.error(error)
-      return { preferences: preferenceDefaults }
-    })
-
-    const userPreferences = prefResult.preferences
-
-    const preference = userPreferences[menuItemId]
-    const parentPreference = userPreferences[parentMenuItemId ?? '']
-
-    if (parentPreference && parentPreference.type === 'radio') {
-      parentPreference.value = menuItemId.split('.')[1]
-    } else if (preference.type === 'checkbox') {
-      preference.value = checked
-    }
-
-    try {
-      await ch.storageLocalSet({ preferences: userPreferences })
-    } catch (error) {
-      console.error(error)
-    }
-
-    if (['master_window', 'padding'].includes(parentMenuItemId) && userPreferences.auto_tiling.value === true) {
-      await retileTiledDisplays()
-    }
-  }
-
-  try {
-    if (menuItemId === 'tile_now_current') {
-      const win = await ch.windowsGet(tab.windowId)
-      await tileDisplayByWin(win)
-    } else if ((menuItemId === 'auto_tiling' && checked) || menuItemId === 'tile_now' || menuItemId === 'tile_now_all' || parentMenuItemId === 'master_ratio') {
-      await tileAllDisplays()
-    } else if (menuItemId === 'auto_tiling' && !checked) {
-      await ch.storageSessionRemove('tiled_windows')
-    } else if (menuItemId === 'rate_extension' || menuItemId === 'donate') {
-      await openExternal(menuItemId)
-    }
-  } catch (error) {
-    console.error(error)
-  }
-}
-
 async function tileAllDisplays () {
   const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
@@ -359,18 +82,6 @@ async function tileAllDisplays () {
       await tileWindows(allDisplays, d)
     }
   }
-}
-
-async function tileDisplayByWin (win) {
-  const allDisplays = await ch.displayGetInfo().catch(error => {
-    console.error(error)
-    return null
-  })
-
-  if (!allDisplays) return
-
-  const targetDisplay = getDisplayContainingWindow(allDisplays, win)
-  await tileWindows(allDisplays, targetDisplay)
 }
 
 async function retileTiledDisplays () {
@@ -408,16 +119,7 @@ async function onWindowCreated (win) {
     return
   }
 
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  const userPreferences = prefResult.preferences
-
-  if (userPreferences.auto_tiling.value === false) {
-    return
-  }
+  if (!await extensionIsEnabled()) return
 
   const allDisplays = await ch.displayGetInfo().catch(error => {
     console.error(error)
@@ -431,16 +133,7 @@ async function onWindowCreated (win) {
 }
 
 async function onWindowRemoved (winId) {
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  const userPreferences = prefResult.preferences
-
-  if (userPreferences.auto_tiling.value === false) {
-    return
-  }
+  if (!await extensionIsEnabled()) return
 
   const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
@@ -486,16 +179,7 @@ async function onWindowRemoved (winId) {
 }
 
 async function onWindowBoundsChanged (win) {
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  const userPreferences = prefResult.preferences
-
-  if (userPreferences.auto_tiling.value === false) {
-    return
-  }
+  if (!await extensionIsEnabled()) return
 
   const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
@@ -525,18 +209,13 @@ async function onWindowBoundsChanged (win) {
 }
 
 async function onCommandReceived (command) {
-  if (command === 'tile-all') {
+  if (command === 'tile_all') {
     await tileAllDisplays()
   }
 }
 
 async function tileWindows (allDisplays, targetDisplay) {
-  const prefResult = await ch.storageLocalGet({ preferences: preferenceDefaults }).catch(error => {
-    console.error(error)
-    return { preferences: preferenceDefaults }
-  })
-
-  const userPreferences = prefResult.preferences
+  const userPreferences = await preferences.get()
 
   const winResult = await ch.storageSessionGet({ tiled_windows: [] }).catch(error => {
     console.error(error)
@@ -789,6 +468,11 @@ async function processTiledWindows (displayObj, tileObj, padding) {
 
 function compareWindowExpectedSize (pos1, pos2) {
   const keys1 = Object.keys(pos1)
+  const keys2 = Object.keys(pos2)
+
+  if (keys1.length !== keys2.length) {
+    return false
+  }
 
   for (const key of keys1) {
     if (pos1[key] !== pos2[key]) {
@@ -843,19 +527,36 @@ function calculateWindowTiles (displayObj, numWindows, padding) {
   return tilePositions
 }
 
-async function openExternal (type) {
-  let url
-
-  if (type === 'rate_extension') {
-    const extensionId = chrome.runtime.id
-    url = `https://chrome.google.com/webstore/detail/${extensionId}`
-  } else if (type === 'donate') {
-    url = 'https://www.buymeacoffee.com/mrviolets'
-  }
-
+async function onMessageReceived (message, sender, sendResponse) {
   try {
-    await ch.tabsCreate({ url })
+    if (message.msg === 'preference_updated') {
+      sendResponse()
+  
+      if (!await extensionIsEnabled()) return
+  
+      if (message.id === 'master_window' || message.id === 'padding') {
+        await retileTiledDisplays()
+      } else if ((message.id === 'auto_tiling' && message.value === true) || (message.id === 'master_ratio')) {
+        await tileAllDisplays()
+      } else if (message.id === 'auto_tiling' && message.value === false) {
+        await ch.storageSessionRemove('tiled_windows')
+      }
+    } else if (message.msg === 'tile_now') {
+      sendResponse()
+      
+      await tileAllDisplays()
+    }
   } catch (error) {
     console.error(error)
+  }
+}
+
+async function extensionIsEnabled () {
+  try {
+    const userPreferences = await preferences.get()
+    return userPreferences.auto_tiling.value
+  } catch (error) {
+    console.error(error)
+    return true
   }
 }

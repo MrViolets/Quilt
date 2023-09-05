@@ -531,9 +531,9 @@ async function onMessageReceived (message, sender, sendResponse) {
   try {
     if (message.msg === 'preference_updated') {
       sendResponse()
-  
+
       if (!await extensionIsEnabled()) return
-  
+
       if (message.id === 'master_window' || message.id === 'padding') {
         await retileTiledDisplays()
       } else if ((message.id === 'auto_tiling' && message.value === true) || (message.id === 'master_ratio')) {
@@ -543,7 +543,7 @@ async function onMessageReceived (message, sender, sendResponse) {
       }
     } else if (message.msg === 'tile_now') {
       sendResponse()
-      
+
       await tileAllDisplays()
     }
   } catch (error) {

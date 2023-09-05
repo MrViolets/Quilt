@@ -209,7 +209,7 @@ async function onWindowBoundsChanged (win) {
 }
 
 async function onCommandReceived (command) {
-  if (command === 'tile-all') {
+  if (command === 'tile_all') {
     await tileAllDisplays()
   }
 }

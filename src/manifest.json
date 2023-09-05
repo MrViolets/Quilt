@@ -21,7 +21,7 @@
     "default_popup": "popup/popup.html"
   },
   "commands": {
-    "tile-all": {
+    "tile_all": {
       "suggested_key": {
         "default": "Ctrl+Shift+I",
         "mac": "Command+Shift+I"

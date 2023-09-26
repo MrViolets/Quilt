@@ -17,7 +17,7 @@ chrome.commands.onCommand.addListener(onCommandReceived)
 async function onInstalled (info) {
   await countConnectedDisplays()
 
-  if (info && 'reason' in info && info.reason === 'update') {
+  if (info && 'reason' in info && info.reason === 'install') {
     await showOnboarding()
   }
 }

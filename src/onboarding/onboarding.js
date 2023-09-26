@@ -2,6 +2,8 @@
 
 /* global chrome */
 
+import * as ch from '../chrome/promisify.js'
+
 window.addEventListener("load", init);
 
 async function init() {
@@ -26,7 +28,7 @@ async function insertStrings() {
 
     const accelerators = document.querySelectorAll("[data-accelerator]");
 
-    const platformInfo = await getPlatformInfo().catch((error) => {
+    const platformInfo = await ch.getPlatformInfo().catch((error) => {
       console.error(error);
     });
 
@@ -44,17 +46,6 @@ async function insertStrings() {
   } catch (error) {
     console.error(error);
   }
-}
-
-function getPlatformInfo() {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.getPlatformInfo(function (info) {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError.message);
-      }
-      resolve(info);
-    });
-  });
 }
 
 function fadeInPage() {

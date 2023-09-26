@@ -31,5 +31,20 @@
   },
   "MENU_PREFERENCES": {
     "message": "Preferences"
+  },
+  "ONBOARDING_TITLE": {
+    "message": "Thanks for installing Quilt"
+  },
+  "ONBOARDING_STEP_1": {
+    "message": "Any new browser windows you create will be automatically tiled according to your screen size and orientation."
+  },
+  "ONBOARDING_STEP_2": {
+    "message": "Click the icon in the extension tray to refine the tiling rules or to turn of automatic tiling."
+  },
+  "ONBOARDING_STEP_3": {
+    "message": "Enjoy your organized workspace!"
+  },
+  "ONBOARDING_DONATE": {
+    "message": "Gifts are entirely optional but they do help me to continue creating free extensions. Thanks for your generosity!"
   }
 }

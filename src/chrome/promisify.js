@@ -13,6 +13,7 @@ export const windowsGetAll = promisifyChromeMethod(chrome.windows.getAll.bind(ch
 export const windowsGet = promisifyChromeMethod(chrome.windows.get.bind(chrome.windows))
 export const windowsUpdate = promisifyChromeMethod(chrome.windows.update.bind(chrome.windows))
 export const sendMessage = promisifyChromeMethod(chrome.runtime.sendMessage.bind(chrome.runtime))
+export const getPlatformInfo = promisifyChromeMethod(chrome.runtime.getPlatformInfo.bind(chrome.runtime))
 
 function promisifyChromeMethod (method) {
   return (...args) =>

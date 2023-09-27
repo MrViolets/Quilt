@@ -14,8 +14,24 @@ chrome.system.display.onDisplayChanged.addListener(onDisplaysChanged)
 chrome.runtime.onMessage.addListener(onMessageReceived)
 chrome.commands.onCommand.addListener(onCommandReceived)
 
-async function onInstalled () {
+async function onInstalled (info) {
   await countConnectedDisplays()
+
+  if (info && 'reason' in info && info.reason === 'install') {
+    await showOnboarding()
+  }
+}
+
+async function showOnboarding () {
+  try {
+    const url = chrome.runtime.getURL('onboarding/onboarding.html')
+
+    if (url) {
+      await ch.tabsCreate({ url })
+    }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 async function onStartup () {

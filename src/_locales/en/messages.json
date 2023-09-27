@@ -31,5 +31,26 @@
   },
   "MENU_PREFERENCES": {
     "message": "Preferences"
+  },
+  "ACCELERATOR_TILE_NOW": {
+    "message": "Ctrl+Shift+I"
+  },
+  "ACCELERATOR_TILE_NOW_MAC": {
+    "message": "\u21E7\u2318I"
+  },
+  "ONBOARDING_TITLE": {
+    "message": "Thanks for installing Quilt"
+  },
+  "ONBOARDING_STEP_1": {
+    "message": "Any new browser windows you create will be automatically tiled according to your screen size and orientation."
+  },
+  "ONBOARDING_STEP_2": {
+    "message": "Click the icon in the extension tray to refine the tiling rules or to turn off automatic tiling. Manually tile your windows anytime using the <span class='shortcut' data-accelerator='TILE_NOW'></span> shortcut."
+  },
+  "ONBOARDING_STEP_3": {
+    "message": "Enjoy your organized workspace!"
+  },
+  "ONBOARDING_DONATE": {
+    "message": "Gifts are entirely optional but they do help me to continue creating free extensions. Thanks for your generosity!"
   }
 }

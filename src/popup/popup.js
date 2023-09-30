@@ -153,7 +153,12 @@ async function openExternal (type) {
 
   if (type === 'rate') {
     const extensionId = chrome.runtime.id
-    url = `https://chrome.google.com/webstore/detail/${extensionId}`
+
+    if (document.body.classList.contains('chrome')) {
+      url = `https://chrome.google.com/webstore/detail/${extensionId}`
+    } else if (document.body.classList.contains('edge')) {
+      url = `https://microsoftedge.microsoft.com/addons/detail/${extensionId}`
+    }
   } else if (type === 'donate') {
     url = 'https://www.buymeacoffee.com/mrviolets'
   }

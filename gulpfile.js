@@ -66,7 +66,7 @@ gulp.task('build-edge', function () {
   return gulp.src(['src/**'])
     .pipe(imagemin([imagemin.optipng({ optimizationLevel: 5 })]))
     .pipe(gulpIf('*.html', cheerio(($) => {
-      $('body').addClass('chrome')
+      $('body').addClass('edge')
     })))
     .pipe(zip(`${pkg.name}-v${version}-edge.zip`))
     .pipe(gulp.dest('build'))

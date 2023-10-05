@@ -26,11 +26,11 @@ body.edge {
   body.chrome {
     color-scheme: dark;
     --accent: #FFB4AB;
-    --primary: #e3e3e3;
-    --secondary: #969696;
-    --tertiary: #38393b;
-    --separator: #3f4042;
-    --background: #292a2d;
+    --primary: #E3E3E3;
+    --secondary: #C7C7C7;
+    --tertiary: #383838;
+    --separator: #474747;
+    --background: #1F1F1F;
     --active: rgba(255, 255, 255, 0.1);
   }
 
@@ -63,16 +63,9 @@ body {
   width: auto;
   overflow: auto;
   overscroll-behavior: none;
-  padding: 4px 0;
+  padding: 0;
   background-color: var(--background);
   min-width: 300px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 16px 8px;
 }
 
 .group {
@@ -102,7 +95,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 40px;
+  height: 28px;
   width: 100%;
   font-size: 13px;
   padding: 0 16px;
@@ -120,8 +113,7 @@ body {
   pointer-events: none;
 }
 
-.label,
-.label-large {
+.label {
   color: var(--primary);
 }
 
@@ -134,77 +126,12 @@ body {
   margin-left: 12px;
 }
 
-.label-large {
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
 .nav-index:hover {
   background: var(--tertiary);
 }
 
 .right-detail {
   margin-left: 16px;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-  width: 26px;
-  height: 16px;
-}
-
-.switch input {
-  display: none;
-}
-
-.track {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  transition: 0.4s;
-  border-radius: 16px;
-  background-color: transparent;
-  box-shadow: inset 0px 0px 0px 1px var(--secondary);
-}
-
-.track:before {
-  position: absolute;
-  content: "";
-  transition: 0.4s;
-  height: 8px;
-  width: 8px;
-  left: 4px;
-  bottom: 4px;
-  background-color: var(--secondary);
-  border-radius: 99px;
-}
-
-input:checked + .track:before {
-  background-color: var(--background);
-  transform: translateX(8px);
-  height: 12px;
-  width: 12px;
-  left: 4px;
-  bottom: 2px;
-}
-
-input:checked + .track {
-  background-color: var(--accent);
-  box-shadow: none;
-}
-
-.external-link {
-  -webkit-mask-image: url(external.svg);
-  mask-image: url(external.svg);
-  background: var(--secondary);
-  height: 20px;
-  width: 20px;
 }
 
 .select {
@@ -220,8 +147,7 @@ select {
   outline: none;
   color: var(--secondary);
   text-align: right;
-  padding-right: 28px;
-  min-width: 80px;
+  padding-right: 20px;
 }
 
 .select:hover select {
@@ -246,46 +172,39 @@ select {
   pointer-events: none;
 }
 
-.select:before {
-  content: "";
-  position: absolute;
-  height: 20px;
+.switch {
+  position: relative;
+  display: inline-block;
   width: 20px;
-  top: 50%;
-  right: 0px;
-  background: var(--tertiary);
-  transform: translateY(-50%);
-  pointer-events: none;
-  border-radius: 4px;
-}
-
-.edge .switch {
-  width: 40px;
   height: 20px;
+  margin-right: 8px;
 }
 
-.edge .track {
-  background-color: transparent;
-  box-shadow: inset 0px 0px 0px 1px var(--secondary);
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.edge .track:before {
-  height: 10px;
-  width: 10px;
-  left: 5px;
-  bottom: 5px;
-  background-color: var(--primary);
-  border-radius: 99px;
-  box-shadow: none;
+.check {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
-.edge input:checked + .track:before {
-  background-color: var(--primary);
-  transform: translateX(20px);
-  height: 10px;
-  width: 10px;
-  left: 5px;
-  bottom: 5px;
+input:checked + .check {
+  background-image: url('check.svg');
+}
+
+.left-detail .switch + .label {
+  padding-left: 0;
+}
+
+.left-detail .label {
+  padding-left: 28px;
 }
 
 .edge .group:not(:last-child)::after {

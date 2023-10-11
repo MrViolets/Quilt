@@ -92,6 +92,10 @@ body {
   padding: 0 16px;
 }
 
+.accelerator {
+  color: var(--secondary);
+}
+
 .item > .left-detail {
   display: flex;
   align-items: center;

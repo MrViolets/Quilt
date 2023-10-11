@@ -41,6 +41,26 @@ async function insertStrings () {
       s.appendChild(optionElement)
     }
   }
+
+  const accelerators = document.querySelectorAll('[data-accelerator]')
+
+  const platformInfo = await ch.getPlatformInfo().catch((error) => {
+    console.error(error)
+  })
+
+  if (accelerators) {
+    for (const a of accelerators) {
+      if (platformInfo.os === 'mac') {
+        a.innerText = chrome.i18n.getMessage(
+            `ACCELERATOR_${a.dataset.accelerator}_MAC`
+        )
+      } else {
+        a.innerText = chrome.i18n.getMessage(
+            `ACCELERATOR_${a.dataset.accelerator}`
+        )
+      }
+    }
+  }
 }
 
 function getOptionsForKey (key, defaultsObject) {
@@ -65,6 +85,14 @@ async function restorePreferences () {
 }
 
 function registerListeners () {
+  const on = (target, event, handler) => {
+    if (typeof target === 'string') {
+      document.getElementById(target).addEventListener(event, handler, false)
+    } else {
+      target.addEventListener(event, handler, false)
+    }
+  }
+
   const onAll = (target, event, handler) => {
     const elements = document.querySelectorAll(target)
 
@@ -73,6 +101,7 @@ function registerListeners () {
     }
   }
 
+  on(document, 'keydown', onDocumentKeydown)
   onAll('input[type="checkbox"]', 'change', onCheckBoxChanged)
   onAll('select', 'change', onSelectChanged)
   onAll('div.nav-index', 'click', onActionClicked)
@@ -141,6 +170,17 @@ async function openExternal (type) {
 
   try {
     await ch.tabsCreate({ url })
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function onDocumentKeydown (e) {
+  try {
+    if (e.key === 'y' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      const tileNowButton = document.getElementById('tile_now')
+      tileNowButton.click()
+    }
   } catch (error) {
     console.error(error)
   }

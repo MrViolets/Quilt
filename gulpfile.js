@@ -49,7 +49,7 @@ gulp.task('build-chrome', function () {
   return gulp.src(['src/**'])
     .pipe(imagemin([imagemin.optipng({ optimizationLevel: 5 })]))
     .pipe(gulpIf('*.html', cheerio(($) => {
-      $('body').removeAttr('class').addClass('chrome');
+      $('body').removeAttr('class').addClass('chrome')
     })))
     .pipe(zip(`${pkg.name}-v${version}-chrome.zip`))
     .pipe(gulp.dest('build'))
@@ -66,7 +66,7 @@ gulp.task('build-edge', function () {
   return gulp.src(['src/**'])
     .pipe(imagemin([imagemin.optipng({ optimizationLevel: 5 })]))
     .pipe(gulpIf('*.html', cheerio(($) => {
-      $('body').removeAttr('class').addClass('edge');
+      $('body').removeAttr('class').addClass('edge')
     })))
     .pipe(zip(`${pkg.name}-v${version}-edge.zip`))
     .pipe(gulp.dest('build'))

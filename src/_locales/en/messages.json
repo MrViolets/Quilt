@@ -33,10 +33,10 @@
     "message": "Preferences"
   },
   "ACCELERATOR_TILE_NOW": {
-    "message": "Ctrl+Shift+I"
+    "message": "Ctrl+Shift+Y"
   },
   "ACCELERATOR_TILE_NOW_MAC": {
-    "message": "\u21E7\u2318I"
+    "message": "\u21E7\u2318Y"
   },
   "ONBOARDING_TITLE": {
     "message": "Thanks for installing Quilt"

@@ -3,7 +3,7 @@ body.chrome {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", Arial, sans-serif;
   --accent: #EB4B41;
   --primary: #1f1f1f;
-  --secondary: #7e7e7e;
+  --secondary: #474747;
   --tertiary: #ededed;
   --separator: #ebebeb;
   --background: #ffffff;
@@ -26,11 +26,11 @@ body.edge {
   body.chrome {
     color-scheme: dark;
     --accent: #FFB4AB;
-    --primary: #E3E3E3;
-    --secondary: #C7C7C7;
+    --primary: #e3e3e3;
+    --secondary: #C6C6C6;
     --tertiary: #383838;
     --separator: #474747;
-    --background: #1F1F1F;
+    --background: #1f1f1f;
     --active: rgba(255, 255, 255, 0.1);
   }
 
@@ -110,6 +110,7 @@ body {
 .nav-index > .left-detail,
 .nav-index > .right-detail {
   pointer-events: none;
+  font-weight: 500;
 }
 
 .label {
@@ -145,12 +146,13 @@ select {
   appearance: none;
   border: none;
   background: transparent;
-  border-radius: 4px;
-  padding: 6px 8px;
+  padding: 0 8px;
+  height: 28px;
   outline: none;
   color: var(--secondary);
   text-align: right;
   padding-right: 20px;
+  font-weight: 500;
 }
 
 .select:hover select {
